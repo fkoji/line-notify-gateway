@@ -6,13 +6,15 @@ License: MIT
 
 import logging
 import requests
+import json
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
 import manage_logs
 
 LOG_PATH = 'logs/line-notify-gateway.log'
-LINE_NOTIFY_URL = 'https://notify-api.line.me/api/notify'
+# LINE_NOTIFY_URL = 'https://notify-api.line.me/api/notify'
+LINE_MESSAGING_API_URL = 'https://api.line.me/v2/bot/message/broadcast'
 app = Flask(__name__)
 
 
@@ -38,11 +40,12 @@ def firing_alert(request):
         icon = "🔷🔷🔷 😎 🔷🔷🔷"
         status = "Resolved"
         time = str(datetime.now().date()) + ' ' + str(datetime.now().time().strftime('%H:%M:%S'))
-    header = {'Authorization':request.headers['AUTHORIZATION']}
+    header = {'Content-Type':'application/json', 'Authorization':request.headers['AUTHORIZATION']}
+    # logging.debug(header)
     for alert in request.json['alerts']:
         msg = "Alertmanger: " + icon + "\nStatus: " + status + "\nSeverity: " + alert['labels']['severity'] + "\nTime: " + time + "\nSummary: " + alert['annotations']['summary'] + "\nDescription: " + alert['annotations']['description']
-        msg = {'message': msg}
-        response = requests.post(LINE_NOTIFY_URL, headers=header, data=msg)
+        msg = {'messages': [{'type': 'text', 'text': msg}]}
+        requests.post(LINE_MESSAGING_API_URL, headers=header, data=json.dumps(msg))
 
 
 @app.route('/')
